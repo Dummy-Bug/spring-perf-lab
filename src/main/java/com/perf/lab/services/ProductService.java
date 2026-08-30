@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.perf.lab.dtos.CreateProductRequestDto;
 import com.perf.lab.dtos.GetProductResponseDto;
 import com.perf.lab.dtos.GetProductWithDetailsResponseDto;
+import com.perf.lab.exceptions.ResourceNotFoundException;
 import com.perf.lab.repositories.ProductRepository;
 import com.perf.lab.schema.Category;
 import com.perf.lab.schema.Product;
@@ -47,11 +48,15 @@ public class ProductService {
                 .image(product.getImage())
                 .rating(product.getRating())
                 .build())
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
     }
 
     public GetProductWithDetailsResponseDto getProductWithDetailsById(Long id) {
-        Product product = productRepository.findProductWithDetailsById(id).get(0);
+        List<Product> results = productRepository.findProductWithDetailsById(id);
+        if (results.isEmpty()) {
+            throw new ResourceNotFoundException("Product with id " + id + " not found");
+        }
+        Product product = results.get(0);
 
         return GetProductWithDetailsResponseDto.builder()
                     .id(product.getId())
@@ -62,7 +67,6 @@ public class ProductService {
                     .image(product.getImage())
                     .rating(product.getRating())
                     .build();
-        
     }
 
     public Product createProduct(CreateProductRequestDto requestDto) {
@@ -86,7 +90,9 @@ public class ProductService {
     }
 
     public void deleteProduct(Long id) {
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+        productRepository.delete(product);
     }
 
     public List<Product> getProductsByCategory(String category) {
