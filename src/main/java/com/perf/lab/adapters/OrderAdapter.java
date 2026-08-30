@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class OrderAdapter {
-    // TODO: try to implement this using mapstruct
+    // TODO: try to implement this using map-struct
 
     private final OrderproductsRepository orderproductsRepository;
 
