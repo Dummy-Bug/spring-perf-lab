@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.perf.lab.dtos.CreateCategoryRequestDto;
 import com.perf.lab.schema.Category;
 import com.perf.lab.services.CategoryService;
+import com.perf.lab.utils.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,25 +28,32 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
-    public ResponseEntity<Category> createCategory(@RequestBody CreateCategoryRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<Category>> createCategory(@RequestBody CreateCategoryRequestDto requestDto) {
+        Category category = categoryService.createCategory(requestDto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(categoryService.createCategory(requestDto));
+                .body(ApiResponse.success(category, "Category created successfully"));
     }
 
     @GetMapping
-    public List<Category> getAllCategories() {
-        return categoryService.getAllCategories();
+    public ResponseEntity<ApiResponse<List<Category>>> getAllCategories() {
+        List<Category> categories = categoryService.getAllCategories();
+        return ResponseEntity
+                .ok(ApiResponse.success(categories, "Categories fetched successfully"));
     }
 
     @GetMapping("/{id}")
-    public Category getCategoryById(@PathVariable Long id) {
-        return categoryService.getCategoryById(id);
+    public ResponseEntity<ApiResponse<Category>> getCategoryById(@PathVariable Long id) {
+        Category category = categoryService.getCategoryById(id);
+        return ResponseEntity
+                .ok(ApiResponse.success(category, "Category fetched successfully"));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
+        return ResponseEntity
+                .ok(ApiResponse.success(null, "Category deleted successfully"));
     }
 
 
