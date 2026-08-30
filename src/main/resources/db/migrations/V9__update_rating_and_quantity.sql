@@ -1,0 +1,3 @@
+ALTER TABLE products MODIFY COLUMN rating DECIMAL(3, 1) NOT NULL;
+
+ALTER TABLE order_products MODIFY COLUMN quantity INT NOT NULL;

@@ -23,6 +23,6 @@ public class CreateProductRequestDto {
 
     private Long categoryId;
 
-    private String rating;
+    private BigDecimal rating;
 }
 
