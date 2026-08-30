@@ -15,6 +15,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query(nativeQuery = true, value = "SELECT DISTINCT category FROM products")
     List<String> findAllCategories();
+//
+//    @Query(nativeQuery = true, value =
+//            "SELECT p.*, c.* FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = :id")
+//    List<Product> findProductWithDetailsById(Long id);
+//    Encountered a duplicated sql alias [id] during auto-discovery of a native-sql query
+
+//    @Query(nativeQuery = true, value =
+//" SELECT p.*, c.name AS category FROM products p JOIN categories c ON p.category_id  = c.id WHERE p.id = :id")
+//    List<Product> findProductWithDetailsById(Long id);
 
 
     @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.id = :id")
