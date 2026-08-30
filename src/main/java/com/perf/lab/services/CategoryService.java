@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.perf.lab.dtos.CreateCategoryRequestDto;
+import com.perf.lab.exceptions.ResourceNotFoundException;
 import com.perf.lab.repositories.CategoryRepository;
 import com.perf.lab.schema.Category;
 
@@ -30,7 +31,7 @@ public class CategoryService {
 
     public Category getCategoryById(Long id) {
         return categoryRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Category not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
     }
 
     public void deleteCategory(Long id) {
