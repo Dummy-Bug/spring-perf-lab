@@ -7,6 +7,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.perf.lab.dtos.CreateOrderRequestDto;
+import com.perf.lab.dtos.GetOrderResponseDto;
+import com.perf.lab.dtos.OrderItemActionDto;
 import com.perf.lab.dtos.OrderItemRequestDto;
 import com.perf.lab.dtos.UpdateOrderRequestDto;
 import com.perf.lab.schema.OrderProducts;
@@ -15,10 +17,9 @@ import com.perf.lab.schema.Product;
 import org.springframework.stereotype.Service;
 
 import com.perf.lab.adapters.OrderAdapter;
-import com.perf.lab.dtos.GetOrderResponseDto;
 import com.perf.lab.exceptions.ResourceNotFoundException;
-import com.perf.lab.repositories.OrderRespository;
-import com.perf.lab.repositories.OrderproductsRepository;
+import com.perf.lab.repositories.OrderRepository;
+import com.perf.lab.repositories.OrderProductsRepository;
 import com.perf.lab.repositories.ProductRepository;
 import com.perf.lab.schema.Order;
 
@@ -29,30 +30,30 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final OrderRespository orderRespository;
-    private final OrderproductsRepository orderproductsRepository;
+    private final OrderRepository orderRepository;
+    private final OrderProductsRepository orderproductsRepository;
     private final ProductRepository productRepository;
     private final OrderAdapter orderAdapter;
 
     public List<GetOrderResponseDto> getAllOrders() {
 
-        List<Order> orders = orderRespository.findAll();
+        List<Order> orders = orderRepository.findAll();
         return orderAdapter.mapToGetOrderResponseDtoList(orders);
 
     }
 
     public GetOrderResponseDto getOrderById(Long id) {
-        Order order = orderRespository.findById(id)
+        Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         return orderAdapter.mapToGetOrderResponseDto(order);
     }
 
     public void deleteOrder(Long id) {
-        Order order = orderRespository.findById(id)
+        Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
-        orderRespository.delete(order);
+        orderRepository.delete(order);
     }
 
     @Transactional
@@ -62,7 +63,7 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .build();
 
-        orderRespository.save(order);
+        orderRepository.save(order);
 
         if (createRequestDto.getOrderItems() != null) {
             List<Long> productIds = createRequestDto.getOrderItems().stream()
@@ -99,18 +100,92 @@ public class OrderService {
     }
 
     public GetOrderResponseDto updateOrder(Long id, UpdateOrderRequestDto updateOrderRequestDto) {
-        Order order = orderRespository.findById(id)
+        Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         if (updateOrderRequestDto.getStatus() != null) {
             order.setStatus(updateOrderRequestDto.getStatus());
-            orderRespository.save(order);
+            orderRepository.save(order);
         }
 
         if (updateOrderRequestDto.getOrderItems() != null) {
-            for (var itemDto : updateOrderRequestDto.getOrderItems()) {
+            List<Long> productIds = updateOrderRequestDto.getOrderItems().stream()
+                    .map(OrderItemActionDto::getProductId)
+                    .toList();
 
-                // process each item ---> N+1 queries: TODO
+            List<Product> products = productRepository.findAllById(productIds);
+
+            Map<Long, Product> productMap = products.stream()
+                    .collect(Collectors.toMap(Product::getId, Function.identity()));
+
+            for (Long productId : productIds) {
+                if (!productMap.containsKey(productId)) {
+                    throw new ResourceNotFoundException("Product not found with id: " + productId);
+                }
+            }
+
+            List<OrderProducts> toSave = new ArrayList<>();
+            List<OrderProducts> toDelete = new ArrayList<>();
+
+            Map<Long, OrderProducts> existingItems = orderproductsRepository.findByOrderWithProduct(order).stream()
+                    .collect(Collectors.toMap(op -> op.getProduct().getId(), Function.identity()));
+
+
+            for (OrderItemActionDto itemAction : updateOrderRequestDto.getOrderItems()) {
+
+                Product product = productMap.get(itemAction.getProductId());
+                OrderProducts existing = existingItems.get(product.getId());
+
+                switch (itemAction.getAction()) {
+                    case ADD -> {
+                        if (existing != null) {
+                            int addQty = (itemAction.getQuantity() != null ? itemAction.getQuantity() : 1);
+                            existing.setQuantity(existing.getQuantity() + addQty);
+                            toSave.add(existing);
+                        } else {
+                            OrderProducts newItem = OrderProducts.builder()
+                                    .order(order)
+                                    .product(product)
+                                    .quantity(itemAction.getQuantity() != null ? itemAction.getQuantity() : 1)
+                                    .build();
+                            existingItems.put(product.getId(), newItem);
+                            toSave.add(newItem);
+                        }
+                    }
+                    case REMOVE -> {
+                        if (existing == null) {
+                            throw new ResourceNotFoundException("Product not found with id: " + product.getId());
+                        }
+                        toDelete.add(existing);
+                        existingItems.remove(product.getId());
+                    }
+                    case INCREMENT -> {
+                        if (existing == null) {
+                            throw new ResourceNotFoundException("Product not found with id: " + product.getId());
+                        }
+                        existing.setQuantity(existing.getQuantity() + 1);
+                        toSave.add(existing);
+                    }
+                    case DECREMENT -> {
+                        if (existing == null) {
+                            throw new ResourceNotFoundException("Product not found with id: " + product.getId());
+                        }
+                        if (existing.getQuantity() <= 1) {
+                            toDelete.add(existing);
+                            existingItems.remove(product.getId());
+                        } else {
+                            existing.setQuantity(existing.getQuantity() - 1);
+                            toSave.add(existing);
+                        }
+                    }
+                }
+            }
+
+            if (!toSave.isEmpty()) {
+                orderproductsRepository.saveAll(toSave);
+            }
+            if (!toDelete.isEmpty()) {
+                orderproductsRepository.deleteAll(toDelete);
             }
         }
 

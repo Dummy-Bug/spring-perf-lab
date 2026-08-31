@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.perf.lab.dtos.GetOrderResponseDto;
 import com.perf.lab.dtos.OrderItemResponseDto;
-import com.perf.lab.repositories.OrderproductsRepository;
+import com.perf.lab.repositories.OrderProductsRepository;
 import com.perf.lab.schema.Order;
 import com.perf.lab.schema.OrderProducts;
 
@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderAdapter {
     // TODO: try to implement this using map-struct
 
-    private final OrderproductsRepository orderproductsRepository;
+    private final OrderProductsRepository orderproductsRepository;
 
     public List<GetOrderResponseDto> mapToGetOrderResponseDtoList(List<Order> orders) {
         return orders.stream()
