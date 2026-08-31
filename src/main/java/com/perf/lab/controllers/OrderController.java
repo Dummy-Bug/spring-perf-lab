@@ -2,6 +2,8 @@ package com.perf.lab.controllers;
 
 import java.util.List;
 
+import com.perf.lab.dtos.CreateOrderRequestDto;
+import com.perf.lab.dtos.UpdateOrderRequestDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -9,11 +11,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.perf.lab.dtos.GetOrderResponseDto;
-import com.perf.lab.schema.Order;
+import com.perf.lab.dtos.GetOrderSummaryResponseDto;
 import com.perf.lab.services.OrderService;
 import com.perf.lab.utils.ApiResponse;
 
@@ -34,37 +37,55 @@ public class OrderController {
     }
 
     @PostMapping
-    public Order createOrder() {
-        throw new UnsupportedOperationException("Not implemented");
+    public ResponseEntity<ApiResponse<GetOrderResponseDto>> createOrder(@RequestBody CreateOrderRequestDto createOrderRequestDto) {
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        orderService.createOrder(createOrderRequestDto),
+                        "Order created successfully")
+                );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null, "Order deleted successfully"));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success
+                        (null, "Order deleted successfully")
+                );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<GetOrderResponseDto>> getOrderById(@PathVariable Long id) {
         GetOrderResponseDto order = orderService.getOrderById(id);
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(order, "Order fetched successfully"));
-    }
-
-    @GetMapping("/user/{userId}")
-    public List<Order> getOrdersByUserId(@PathVariable Long userId) {
-        throw new UnsupportedOperationException("Not implemented");
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        order, "Order fetched successfully")
+                );
     }
 
     @PutMapping("/{id}")
-    public Order updateOrder(@PathVariable Long id) {
-        throw new UnsupportedOperationException("Not implemented");
+    public ResponseEntity<ApiResponse<GetOrderResponseDto>> updateOrder(@PathVariable Long id, @RequestBody UpdateOrderRequestDto updateOrderRequestDto) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        orderService.updateOrder(id, updateOrderRequestDto),
+                        "Order updated successfully")
+                );
     }
 
     @GetMapping("/{id}/summary")
-    public void getOrderSummary(@PathVariable Long id) {
-        throw new UnsupportedOperationException("Not implemented");
+    public ResponseEntity<ApiResponse<GetOrderSummaryResponseDto>> getOrderSummary(@PathVariable Long id) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(
+                        orderService.getOrderSummary(id),
+                        "Order summary fetched successfully")
+                );
     }
 
 }

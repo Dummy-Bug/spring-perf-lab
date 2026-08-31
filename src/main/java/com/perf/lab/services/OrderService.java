@@ -1,16 +1,13 @@
 package com.perf.lab.services;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.perf.lab.dtos.CreateOrderRequestDto;
-import com.perf.lab.dtos.GetOrderResponseDto;
-import com.perf.lab.dtos.OrderItemActionDto;
-import com.perf.lab.dtos.OrderItemRequestDto;
-import com.perf.lab.dtos.UpdateOrderRequestDto;
+import com.perf.lab.dtos.*;
 import com.perf.lab.schema.OrderProducts;
 import com.perf.lab.schema.OrderStatus;
 import com.perf.lab.schema.Product;
@@ -190,5 +187,32 @@ public class OrderService {
         }
 
         return orderAdapter.mapToGetOrderResponseDto(order);
+    }
+
+    public GetOrderSummaryResponseDto getOrderSummary(Long id) {
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        List<OrderProducts> orderProducts = orderproductsRepository.findByOrderWithProduct(order);
+        List<OrderItemResponseDto> items = orderAdapter.mapToOrderItemResponseDto(orderProducts);
+
+        int totalItems = orderProducts.stream()
+                .mapToInt(OrderProducts::getQuantity)
+                .sum();
+
+        BigDecimal totalPrice = orderProducts.stream()
+                .map(op -> op.getProduct().getPrice().multiply(BigDecimal.valueOf(op.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return GetOrderSummaryResponseDto.builder()
+                .id(order.getId())
+                .status(order.getStatus())
+                .items(items)
+                .totalItems(totalItems)
+                .totalPrice(totalPrice)
+                .createdAt(order.getCreatedAt())
+                .updatedAt(order.getUpdatedAt())
+                .build();
     }
 }
