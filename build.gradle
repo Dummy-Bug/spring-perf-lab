@@ -22,6 +22,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-mysql'
+    implementation 'io.github.cdimascio:dotenv-java:3.0.0'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
@@ -33,4 +34,12 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.named('bootRun') {
+    jvmArgs = ['-javaagent:newrelic/newrelic.jar']
+
+    file('.env').readLines()
+        .findAll { it.contains('=') && !it.startsWith('#') }
+        .each { environment it.split('=', 2)[0].trim(), it.split('=', 2)[1].trim() }
 }
