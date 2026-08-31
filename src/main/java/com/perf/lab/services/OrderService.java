@@ -22,7 +22,9 @@ import com.perf.lab.schema.Order;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -74,6 +76,7 @@ public class OrderService {
 
             for (Long productId : productIds) {
                 if (!productMap.containsKey(productId)) {
+                    log.error("Product not found with id: {}", productId);
                     throw new ResourceNotFoundException("Product not found with id: " + productId);
                 }
             }
@@ -96,6 +99,7 @@ public class OrderService {
         return orderAdapter.mapToGetOrderResponseDto(order);
     }
 
+    @Transactional
     public GetOrderResponseDto updateOrder(Long id, UpdateOrderRequestDto updateOrderRequestDto) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
