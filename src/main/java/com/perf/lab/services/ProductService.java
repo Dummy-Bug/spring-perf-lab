@@ -2,8 +2,10 @@ package com.perf.lab.services;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.perf.lab.services.cache.ProductRedisCache;
 import org.springframework.stereotype.Service;
 
 import com.perf.lab.dtos.CreateProductRequestDto;
@@ -19,15 +21,16 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
-    
+
     private final ProductRepository productRepository;
     private final CategoryService categoryService;
+    private final ProductRedisCache productRedisCache;
 
     public List<GetProductResponseDto> getAllProducts() {
         List<Product> products = productRepository.findAll();
 
         return products.stream()
-        .map(product -> GetProductResponseDto.builder()
+                .map(product -> GetProductResponseDto.builder()
                         .id(product.getId())
                         .title(product.getTitle())
                         .description(product.getDescription())
@@ -35,20 +38,29 @@ public class ProductService {
                         .image(product.getImage())
                         .rating(product.getRating())
                         .build())
-                    .collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     public GetProductResponseDto getProductById(Long id) {
-        return productRepository.findById(id)
-            .map(product -> GetProductResponseDto.builder()
-                .id(product.getId())
-                .title(product.getTitle())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .image(product.getImage())
-                .rating(product.getRating())
-                .build())
-            .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+
+        Optional<GetProductResponseDto> cachedSummary = productRedisCache.getSummary(id);
+
+        if (cachedSummary.isPresent()) return cachedSummary.get();
+
+        GetProductResponseDto response = productRepository.findById(id)
+                .map(product -> GetProductResponseDto.builder()
+                        .id(product.getId())
+                        .title(product.getTitle())
+                        .description(product.getDescription())
+                        .price(product.getPrice())
+                        .image(product.getImage())
+                        .rating(product.getRating())
+                        .build())
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+
+        productRedisCache.putSummary(id, response);
+
+        return response;
     }
 
     public GetProductWithDetailsResponseDto getProductWithDetailsById(Long id) {
@@ -59,30 +71,30 @@ public class ProductService {
         Product product = results.get(0);
 
         return GetProductWithDetailsResponseDto.builder()
-                    .id(product.getId())
-                    .title(product.getTitle())
-                    .description(product.getDescription())
-                    .price(product.getPrice())
-                    .category(product.getCategory().getName())
-                    .image(product.getImage())
-                    .rating(product.getRating())
-                    .build();
+                .id(product.getId())
+                .title(product.getTitle())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .category(product.getCategory().getName())
+                .image(product.getImage())
+                .rating(product.getRating())
+                .build();
     }
 
     public Product createProduct(CreateProductRequestDto requestDto) {
 
         Category category = categoryService.getCategoryById(
-            requestDto.getCategoryId()
+                requestDto.getCategoryId()
         );
 
         Product newProduct = Product.builder()
-            .title(requestDto.getTitle())
-            .description(requestDto.getDescription())
-            .image(requestDto.getImage())
-            .price(requestDto.getPrice())
-            .category(category)
-            .rating(requestDto.getRating())
-            .build();
+                .title(requestDto.getTitle())
+                .description(requestDto.getDescription())
+                .image(requestDto.getImage())
+                .price(requestDto.getPrice())
+                .category(category)
+                .rating(requestDto.getRating())
+                .build();
 
         return productRepository.save(newProduct); // this will save the product to the database
 
@@ -91,7 +103,7 @@ public class ProductService {
 
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
         productRepository.delete(product);
     }
 

@@ -1,16 +1,23 @@
 spring:
   application:
     name: lab
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   datasource:
     url: jdbc:mysql://localhost:3306/lab
     username: root
     password: ''
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: validate
 
   flyway:
     enabled: true
     locations: "classpath:db/migrations"
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
