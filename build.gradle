@@ -29,6 +29,7 @@ dependencies {
     implementation 'io.github.cdimascio:dotenv-java:3.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'redis.clients:jedis'
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
@@ -56,6 +57,6 @@ tasks.named('bootRun') {
     jvmArgs = ['-javaagent:newrelic/newrelic.jar']
 
     file('.env').readLines()
-        .findAll { it.contains('=') && !it.startsWith('#') }
-        .each { environment it.split('=', 2)[0].trim(), it.split('=', 2)[1].trim() }
+            .findAll { it.contains('=') && !it.startsWith('#') }
+            .each { environment it.split('=', 2)[0].trim(), it.split('=', 2)[1].trim() }
 }

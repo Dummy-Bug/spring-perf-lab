@@ -21,27 +21,29 @@ public class CategoryService {
 
     public Category createCategory(CreateCategoryRequestDto requestDto) {
         Category newCategory = Category.builder()
-            .name(requestDto.getName())
-            .build();
+                .name(requestDto.getName())
+                .build();
 
         return categoryRepository.save(newCategory);
     }
 
     public List<Category> getAllCategories() {
+        log.warn("getAllCategories method called");
         return categoryRepository.findAll();
     }
 
     public Category getCategoryById(Long id) {
+        log.info("getCategoryById method called with id {}", id);
         return categoryRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
     }
 
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
         categoryRepository.delete(category);
         log.info("Category with id {} deleted successfully", id);
     }
-    
+
 }
 
