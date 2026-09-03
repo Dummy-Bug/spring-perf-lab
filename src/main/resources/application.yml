@@ -1,4 +1,10 @@
 spring:
+
+  docker:
+    compose:
+      enabled: true
+      file: docker-compose.yml
+
   application:
     name: lab
 
@@ -21,3 +27,47 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: validate
+
+management:
+  otlp:
+    metrics:
+      export:
+        url: http://localhost:4318/v1/metrics
+        step: 10s
+        histogram-flavor: explicit-bucket-histogram
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/logs
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+  tracing:
+    export:
+      enabled: true
+    sampling:
+      probability: 1.0
+
+  endpoints:
+    web:
+      exposure:
+        include:
+        - health
+        - metrics
+        - prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  endpoint:
+    health:
+      show-details: always
+
+server:
+  shutdown: immediate
+logging:
+  level:
+    com.perf.lab: INFO
+    org.springframework.boot.docker.compose: DEBUG
